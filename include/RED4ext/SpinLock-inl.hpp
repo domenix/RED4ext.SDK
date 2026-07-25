@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include <Windows.h>
+#include <RED4ext/Platform.hpp>
 
 RED4EXT_INLINE RED4ext::SpinLock::SpinLock()
     : state(0)
@@ -15,7 +15,7 @@ RED4EXT_INLINE RED4ext::SpinLock::SpinLock()
 
 RED4EXT_INLINE bool RED4ext::SpinLock::TryLock()
 {
-    return InterlockedExchange8(&state, 1) == 0;
+    return RED4ext::Detail::Platform::AtomicExchange(&state, static_cast<char>(1)) == 0;
 }
 
 RED4EXT_INLINE void RED4ext::SpinLock::Lock()
@@ -27,14 +27,14 @@ RED4EXT_INLINE void RED4ext::SpinLock::Lock()
             break;
 
         if (loopCount >= 16)
-            SwitchToThread();
+            RED4ext::Detail::Platform::YieldThread();
         ++loopCount;
     }
 }
 
 RED4EXT_INLINE void RED4ext::SpinLock::Unlock()
 {
-    InterlockedExchange8(&state, 0);
+    RED4ext::Detail::Platform::AtomicExchange(&state, static_cast<char>(0));
 }
 
 // ----------------------------

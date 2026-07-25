@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <Windows.h>
+#include <RED4ext/Platform.hpp>
 
 #ifdef RED4EXT_STATIC_LIB
 #undef RED4EXT_HEADER_ONLY
@@ -45,13 +45,7 @@
     type* name;
 #endif
 
-#ifndef RED4EXT_C_EXPORT
-#define RED4EXT_C_EXPORT extern "C" __declspec(dllexport)
-#endif
-
-#ifndef RED4EXT_CALL
-#define RED4EXT_CALL __fastcall
-#endif
+// RED4EXT_C_EXPORT and RED4EXT_CALL are defined in <RED4ext/Platform.hpp>.
 
 /*
  * @brief Compute the runtime address of an offset.
@@ -61,6 +55,12 @@
  *  const auto addr =  RED4EXT_OFFSET_TO_ADDR(offset);
  */
 #ifndef RED4EXT_OFFSET_TO_ADDR
+#if RED4EXT_PLATFORM_WINDOWS
 #define RED4EXT_OFFSET_TO_ADDR(offset)                                                                                 \
     reinterpret_cast<void*>(reinterpret_cast<std::uintptr_t>(GetModuleHandle(nullptr)) + offset)
+#else
+// The equivalent elsewhere is the main image's load address, which is a runtime
+// lookup rather than a macro. Left undefined so a use site fails loudly instead of
+// silently computing a wrong address.
+#endif
 #endif

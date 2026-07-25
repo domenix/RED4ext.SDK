@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Windows.h>
+#include <RED4ext/Platform.hpp>
 
 namespace RED4ext::v1
 {

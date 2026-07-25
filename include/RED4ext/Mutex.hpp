@@ -1,7 +1,7 @@
 #pragma once
 
 #include <RED4ext/Common.hpp>
-#include <windows.h>
+#include <RED4ext/Platform.hpp>
 
 namespace RED4ext
 {

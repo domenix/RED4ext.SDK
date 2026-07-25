@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <memory>
 
-#include <Windows.h>
+#include <RED4ext/Platform.hpp>
 
 #include <RED4ext/Detail/AddressHashes.hpp>
 #include <RED4ext/Hashing/FNV1a.hpp>
@@ -105,7 +105,7 @@ RED4EXT_INLINE void RED4ext::JobHandle::AcquireInternalHandle(uintptr_t aUnk)
 RED4EXT_INLINE void RED4ext::JobHandle::CopyInternalHandle(const JobHandle& aOther)
 {
     internal = aOther.internal;
-    InterlockedExchangeAdd(&internal->unk1C, static_cast<uint32_t>(1));
+    RED4ext::Detail::Platform::AtomicFetchAdd(&internal->unk1C, static_cast<uint32_t>(1));
 }
 
 RED4EXT_INLINE void RED4ext::JobHandle::MoveInternalHandle(JobHandle& aOther)

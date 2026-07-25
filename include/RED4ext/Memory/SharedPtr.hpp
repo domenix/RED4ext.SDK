@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <memory>
 
-#include <Windows.h>
+#include <RED4ext/Platform.hpp>
 
 #include <RED4ext/Common.hpp>
 #include <RED4ext/Detail/AddressHashes.hpp>
@@ -24,7 +24,7 @@ struct RefCnt
 
     void IncRef()
     {
-        InterlockedIncrement(&strongRefs);
+        Detail::Platform::AtomicAddFetch(&strongRefs, 1u);
     }
 
     // Returns true if the strong refs count has been successfully incremented.
@@ -33,7 +33,7 @@ struct RefCnt
         uint32_t uses = strongRefs;
         while (uses != 0)
         {
-            const uint32_t oldUses = InterlockedCompareExchange(&strongRefs, uses + 1, uses);
+            const uint32_t oldUses = Detail::Platform::AtomicCompareExchange(&strongRefs, uses + 1, uses);
 
             if (oldUses == uses)
             {
@@ -49,12 +49,12 @@ struct RefCnt
     // Returns true if the strong refs count reached zero.
     bool DecRef()
     {
-        return InterlockedExchangeAdd(&strongRefs, static_cast<uint32_t>(-1)) == 1;
+        return Detail::Platform::AtomicFetchAdd(&strongRefs, static_cast<uint32_t>(-1)) == 1;
     }
 
     void IncWeakRef()
     {
-        InterlockedIncrement(&weakRefs);
+        Detail::Platform::AtomicAddFetch(&weakRefs, 1u);
     }
 
     volatile uint32_t strongRefs;

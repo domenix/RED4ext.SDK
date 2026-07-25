@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <string_view>
 
-#include <Windows.h>
+#include <RED4ext/Platform.hpp>
 
 #include <RED4ext/Api/v1/PluginInfo.hpp>
 

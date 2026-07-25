@@ -4,7 +4,7 @@
 #include <RED4ext/Scripting/Natives/ScriptGameInstance.hpp>
 #endif
 
-#include <Windows.h>
+#include <RED4ext/Platform.hpp>
 #include <mutex>
 
 #include <RED4ext/GameEngine.hpp>
@@ -28,11 +28,10 @@ RED4EXT_INLINE RED4ext::ScriptGameInstance::ScriptGameInstance(GameInstance* aIn
 
             if (compiledSize != nativeSize)
             {
-                MessageBox(nullptr,
-                           TEXT("The compiled size do not match the native size of ScriptGameInstance.\nCheck the game "
-                                "executable for the native size."),
-                           TEXT("RED4ext.SDK"), MB_ICONWARNING | MB_OK);
-                std::abort();
+                Detail::Platform::FatalError(
+                    L"RED4ext.SDK",
+                    L"The compiled size do not match the native size of ScriptGameInstance.\nCheck the game "
+                    L"executable for the native size.");
             }
         });
 

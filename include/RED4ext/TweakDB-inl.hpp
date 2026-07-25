@@ -1,5 +1,7 @@
 #pragma once
 
+#include <RED4ext/Platform.hpp>
+
 #ifdef RED4EXT_STATIC_LIB
 #include <RED4ext/TweakDB.hpp>
 #endif
@@ -12,7 +14,7 @@
 
 RED4EXT_INLINE uintptr_t GetAddressFromInstruction(uintptr_t aRVAAddress, int32_t aAddressOffset)
 {
-    auto address = reinterpret_cast<uintptr_t>(GetModuleHandle(nullptr)) + aRVAAddress;
+    auto address = RED4ext::Detail::Platform::GetMainImageBase() + aRVAAddress;
     auto offset = *reinterpret_cast<int32_t*>(address + aAddressOffset);
     return (address + aAddressOffset + 4) + offset;
 }
@@ -176,7 +178,7 @@ RED4EXT_INLINE bool RED4ext::TweakDB::UpdateRecord(gamedataTweakDBRecord* aRecor
         virtual Memory::AllocationResult AllocAligned(uint64_t aSize, uint32_t aAlignment) const override
         {
             Memory::AllocationResult result;
-            result.memory = _aligned_malloc(aSize, aAlignment);
+            result.memory = RED4ext::Detail::Platform::AlignedAlloc(aSize, aAlignment);
             result.size = aSize;
             return result;
         }
@@ -201,7 +203,7 @@ RED4EXT_INLINE bool RED4ext::TweakDB::UpdateRecord(gamedataTweakDBRecord* aRecor
 
         virtual void Free(Memory::AllocationResult& aAllocation) const override
         {
-            _aligned_free(aAllocation.memory);
+            RED4ext::Detail::Platform::AlignedFree(aAllocation.memory);
         }
 
         virtual void sub_28(void* aMemory) const override
@@ -325,7 +327,8 @@ RED4EXT_INLINE int32_t RED4ext::TweakDB::CreateFlatValue(const CStackType& aStac
     UpsizeFlatDataBuffer(MaxFlatDataBufferSize);
 
     uintptr_t flatAlignment = (std::max)(aStackType.type->GetAlignment(), 8u);
-    uintptr_t flatValueSize = RED4ext::AlignUp(8ull /* vftable */ + aStackType.type->GetSize(), flatAlignment);
+    uintptr_t flatValueSize =
+        RED4ext::AlignUp(static_cast<uintptr_t>(8) /* vftable */ + aStackType.type->GetSize(), flatAlignment);
     uintptr_t flatDataBufferEnd_Aligned = RED4ext::AlignUp(flatDataBufferEnd, flatAlignment);
 
     if (AllocateFlatValue(reinterpret_cast<void*>(flatDataBufferEnd_Aligned), aStackType))

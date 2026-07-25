@@ -1,5 +1,7 @@
 #pragma once
 
+#include <RED4ext/Platform.hpp>
+
 #include <RED4ext/Memory/Utils.hpp>
 
 namespace RED4ext
@@ -30,7 +32,7 @@ public:
 protected:
     void Release()
     {
-        if (InterlockedDecrement(&m_refCount) == 0)
+        if (Detail::Platform::AtomicAddFetch(&m_refCount, static_cast<uint32_t>(-1)) == 0)
         {
             Destroy();
         }
@@ -38,7 +40,7 @@ protected:
 
     void AddRef()
     {
-        InterlockedIncrement(&m_refCount);
+        Detail::Platform::AtomicAddFetch(&m_refCount, 1u);
     }
 
 private:

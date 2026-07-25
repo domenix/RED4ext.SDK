@@ -1,5 +1,7 @@
 #pragma once
 
+#include <RED4ext/Platform.hpp>
+
 #ifdef RED4EXT_STATIC_LIB
 #include <RED4ext/RTTISystem.hpp>
 #endif
@@ -21,5 +23,5 @@ RED4EXT_INLINE void RED4ext::CRTTISystem::RegisterType(rtti::IType* aType)
 RED4EXT_INLINE const uint32_t RED4ext::RTTIRegistrator::GetNextId()
 {
     static UniversalRelocPtr<volatile uint32_t> ptr(Detail::AddressHashes::CRTTIRegistrator_RTTIAsyncId);
-    return InterlockedIncrement(ptr.GetAddr());
+    return RED4ext::Detail::Platform::AtomicAddFetch(ptr.GetAddr(), 1u);
 }

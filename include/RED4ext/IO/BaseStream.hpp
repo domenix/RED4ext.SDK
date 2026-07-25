@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Windows.h>
+#include <RED4ext/Platform.hpp>
+
 #include <cstdint>
 
 #include <RED4ext/Common.hpp>

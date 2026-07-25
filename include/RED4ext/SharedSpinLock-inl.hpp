@@ -5,9 +5,8 @@
 #endif
 
 #include <cstdint>
-#include <intrin.h>
 
-#include <Windows.h>
+#include <RED4ext/Platform.hpp>
 
 RED4EXT_INLINE RED4ext::SharedSpinLock::SharedSpinLock()
     : state(0)
@@ -16,7 +15,7 @@ RED4EXT_INLINE RED4ext::SharedSpinLock::SharedSpinLock()
 
 RED4EXT_INLINE bool RED4ext::SharedSpinLock::TryLock()
 {
-    return _InterlockedCompareExchange8(&state, -1, 0) == 0;
+    return RED4ext::Detail::Platform::AtomicCompareExchange(&state, static_cast<char>(-1), static_cast<char>(0)) == 0;
 }
 
 RED4EXT_INLINE void RED4ext::SharedSpinLock::Lock()
@@ -31,13 +30,13 @@ RED4EXT_INLINE void RED4ext::SharedSpinLock::Lock()
         if (loopCount == 0x4000)
             loopCount = 0;
         else if (!(loopCount & 511))
-            SwitchToThread();
+            RED4ext::Detail::Platform::YieldThread();
     }
 }
 
 RED4EXT_INLINE void RED4ext::SharedSpinLock::Unlock()
 {
-    InterlockedExchange8(&state, 0);
+    RED4ext::Detail::Platform::AtomicExchange(&state, static_cast<char>(0));
 }
 
 RED4EXT_INLINE bool RED4ext::SharedSpinLock::TryLockShared()
@@ -45,7 +44,8 @@ RED4EXT_INLINE bool RED4ext::SharedSpinLock::TryLockShared()
     char currentState = state;
     if (currentState != -1)
     {
-        return _InterlockedCompareExchange8(&state, currentState + 1, currentState) == currentState;
+        return RED4ext::Detail::Platform::AtomicCompareExchange(&state, static_cast<char>(currentState + 1), currentState) ==
+               currentState;
     }
     return false;
 }
@@ -62,13 +62,13 @@ RED4EXT_INLINE void RED4ext::SharedSpinLock::LockShared()
         if (loopCount == 0x4000)
             loopCount = 0;
         else if (!(loopCount & 511))
-            SwitchToThread();
+            RED4ext::Detail::Platform::YieldThread();
     }
 }
 
 RED4EXT_INLINE void RED4ext::SharedSpinLock::UnlockShared()
 {
-    _InterlockedExchangeAdd8(&state, -1);
+    RED4ext::Detail::Platform::AtomicFetchAdd(&state, static_cast<char>(-1));
 }
 
 // --------------------------------------------

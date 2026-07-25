@@ -25,6 +25,11 @@ endif()
 option(RED4EXT_HEADER_ONLY "Use the header only version of the library." OFF)
 cmake_dependent_option(RED4EXT_USE_PCH "Use precompiled headers to speed up compilation time." OFF "NOT RED4EXT_HEADER_ONLY" OFF)
 
+# The GpuApi headers wrap Direct3D 12 (<d3d12.h>, <dxgi1_6.h>, <wrl/*>) and describe the
+# Windows renderer. There is no equivalent on other platforms, so they are excluded by
+# default off Windows rather than stubbed.
+option(RED4EXT_BUILD_GPUAPI "Build the GpuApi (Direct3D 12) portion of the SDK." ${WIN32})
+
 set(RED4EXT_CMAKE_DIR "${PROJECT_SOURCE_DIR}/cmake")
 set(RED4EXT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/")
 set(RED4EXT_VENDOR_DIR "${PROJECT_SOURCE_DIR}/vendor/")
@@ -61,6 +66,17 @@ configure_file(
   @ONLY
 )
 
+# Compiler options needed to build the SDK's Windows-oriented sources with a
+# non-MSVC compiler. Measured on Apple clang 21 / arm64:
+#   -fdeclspec          accepts the 870 machine-generated __declspec(align(0x10))
+#   -fms-extensions     accepts the remaining MSVC-isms
+#   -Wno-unknown-pragmas silences the 50 `#pragma warning(...)` directives
+# `-mms-bitfields` was measured to make no difference and is deliberately not set.
+set(RED4EXT_NON_MSVC_OPTIONS "")
+if(NOT MSVC)
+  set(RED4EXT_NON_MSVC_OPTIONS -fdeclspec -fms-extensions -Wno-unknown-pragmas)
+endif()
+
 if(RED4EXT_HEADER_ONLY)
   add_library(RED4ext.SDK INTERFACE)
 
@@ -68,12 +84,25 @@ if(RED4EXT_HEADER_ONLY)
     RED4ext.SDK
     INTERFACE
       "$<BUILD_INTERFACE:${RED4EXT_INCLUDE_DIR}>"
-      "$<BUILD_INTERFACE:${RED4EXT_VENDOR_DIR}/D3D12MemAlloc>"
       "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   )
+
+  if(RED4EXT_BUILD_GPUAPI)
+    target_include_directories(
+      RED4ext.SDK
+      INTERFACE "$<BUILD_INTERFACE:${RED4EXT_VENDOR_DIR}/D3D12MemAlloc>"
+    )
+  endif()
+
+  target_compile_options(RED4ext.SDK INTERFACE ${RED4EXT_NON_MSVC_OPTIONS})
 else()
   file(GLOB_RECURSE RED4EXT_HEADER_FILES "${RED4EXT_INCLUDE_DIR}/*.hpp")
   file(GLOB_RECURSE RED4EXT_SRC_FILES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+
+  if(NOT RED4EXT_BUILD_GPUAPI)
+    list(FILTER RED4EXT_HEADER_FILES EXCLUDE REGEX "/RED4ext/GpuApi/")
+    list(FILTER RED4EXT_SRC_FILES EXCLUDE REGEX "/src/GpuApi/")
+  endif()
 
   get_property(RED4EXT_USE_FOLDERS GLOBAL PROPERTY USE_FOLDERS)
   if(RED4EXT_USE_FOLDERS)
@@ -101,17 +130,27 @@ else()
     RED4ext.SDK
     PUBLIC
       "$<BUILD_INTERFACE:${RED4EXT_INCLUDE_DIR}>"
-      "$<BUILD_INTERFACE:${RED4EXT_VENDOR_DIR}/D3D12MemAlloc>"
       "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
   )
+
+  if(RED4EXT_BUILD_GPUAPI)
+    target_include_directories(
+      RED4ext.SDK
+      PUBLIC "$<BUILD_INTERFACE:${RED4EXT_VENDOR_DIR}/D3D12MemAlloc>"
+    )
+  endif()
 
   target_compile_definitions(
     RED4ext.SDK
       PUBLIC
         RED4EXT_STATIC_LIB
-      PRIVATE
-        WIN32_LEAN_AND_MEAN
   )
+
+  if(WIN32)
+    target_compile_definitions(RED4ext.SDK PRIVATE WIN32_LEAN_AND_MEAN)
+  endif()
+
+  target_compile_options(RED4ext.SDK PUBLIC ${RED4EXT_NON_MSVC_OPTIONS})
 
   if(RED4EXT_USE_PCH)
     set(RED4EXT_PCH_FILE "${PROJECT_BINARY_DIR}/red4ext_pch.hpp")

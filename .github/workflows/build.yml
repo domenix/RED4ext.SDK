@@ -37,3 +37,38 @@ jobs:
           cmake `
             --build . `
             --config ${{ matrix.config }}
+
+  build-macos:
+    name: Build macOS (Header Only ${{ matrix.use_header_only }}, ${{ matrix.config }})
+    runs-on: macos-14 # Apple Silicon
+
+    strategy:
+      fail-fast: false
+      matrix:
+        use_header_only: [ NO, YES ]
+        config: [ Debug, Release ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
+            -DCMAKE_CXX_STANDARD=20 \
+            -DRED4EXT_HEADER_ONLY=${{ matrix.use_header_only }} \
+            -DRED4EXT_BUILD_EXAMPLES=ON \
+            -DRED4EXT_INSTALL=OFF
+
+      # RED4EXT_EXTRA_WARNINGS / RED4EXT_TREAT_WARNINGS_AS_ERRORS are deliberately left
+      # off here, unlike the Windows job. Clang's -Wall -Wextra surfaces ~120 pre-existing
+      # diagnostics that MSVC's /W4 does not (-Wignored-qualifiers, -Wreorder-ctor-init,
+      # -Wnonportable-include-path, deprecated implicit copy constructors). None are
+      # macOS-specific and none are introduced by this port, so failing the build on them
+      # would only make the job red for reasons unrelated to what it is meant to guard.
+      #
+      # RED4EXT_BUILD_GPUAPI defaults to OFF off Windows: those headers wrap Direct3D 12.
+
+      - name: Build
+        run: cmake --build build

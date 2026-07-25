@@ -9,7 +9,6 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
-#include <intrin.h>
 #include <iomanip>
 #include <map>
 #include <memory>
@@ -30,4 +29,10 @@
 #include <variant>
 #include <vector>
 
+// Both of these are Windows-only. RED4ext/Platform.hpp pulls in <intrin.h> itself on the
+// platforms that have it, so the precompiled header does not need to.
+#if defined(_WIN32)
+#include <intrin.h>
+
 #include <Windows.h>
+#endif

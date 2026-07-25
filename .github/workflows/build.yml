@@ -52,12 +52,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # RED4EXT_USE_PCH is passed explicitly, matching the Windows job. It defaults to OFF, so
+      # leaving it out meant the precompiled header was never built here -- and it did not
+      # compile, because it included <intrin.h> and <Windows.h> unconditionally.
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=${{ matrix.config }} \
             -DCMAKE_CXX_STANDARD=20 \
             -DRED4EXT_HEADER_ONLY=${{ matrix.use_header_only }} \
+            -DRED4EXT_USE_PCH=ON \
             -DRED4EXT_BUILD_EXAMPLES=ON \
             -DRED4EXT_INSTALL=OFF
 

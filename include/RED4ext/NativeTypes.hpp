@@ -26,6 +26,16 @@
 
 namespace RED4ext
 {
+namespace Detail
+{
+/**
+ * @brief Always false, but dependent on its parameter, so a static_assert using it
+ *        is only evaluated once the enclosing template is instantiated.
+ */
+template<typename>
+inline constexpr bool AlwaysFalse = false;
+} // namespace Detail
+
 namespace rtti
 {
 struct IType;
@@ -290,7 +300,10 @@ struct Variant
         {
             // TODO: support all game types and user types using RedLib solution:
             // https://github.com/psiberx/cp2077-red-lib/blob/master/include/Red/TypeInfo/Resolving.hpp
-            static_assert(false, "Type is currently unsupported.");
+            // Made dependent on T so it only fires when this branch is actually
+            // selected. A bare static_assert(false) is ill-formed in an uninstantiated
+            // template before CWG2518; MSVC and Clang 17+ accept it, older Clang does not.
+            static_assert(Detail::AlwaysFalse<T>, "Type is currently unsupported.");
             return "";
         }
     }

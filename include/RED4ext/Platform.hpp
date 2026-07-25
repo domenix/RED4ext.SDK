@@ -22,7 +22,10 @@
 #define RED4EXT_PLATFORM_WINDOWS 0
 #endif
 
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -30,13 +33,11 @@
 #if RED4EXT_PLATFORM_WINDOWS
 
 #include <Windows.h>
+#include <intrin.h> // _Interlocked* intrinsics used by the atomics below
 
 #else
 
 #include <cerrno>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
@@ -110,19 +111,59 @@ namespace Platform
 template<typename T>
 inline T AtomicExchange(volatile T* aTarget, T aValue)
 {
+#if RED4EXT_PLATFORM_WINDOWS
+    if constexpr (sizeof(T) == 1)
+        return static_cast<T>(
+            _InterlockedExchange8(reinterpret_cast<volatile char*>(aTarget), static_cast<char>(aValue)));
+    else if constexpr (sizeof(T) == 2)
+        return static_cast<T>(
+            _InterlockedExchange16(reinterpret_cast<volatile short*>(aTarget), static_cast<short>(aValue)));
+    else if constexpr (sizeof(T) == 4)
+        return static_cast<T>(
+            _InterlockedExchange(reinterpret_cast<volatile long*>(aTarget), static_cast<long>(aValue)));
+    else
+        return static_cast<T>(
+            _InterlockedExchange64(reinterpret_cast<volatile __int64*>(aTarget), static_cast<__int64>(aValue)));
+#else
     return __atomic_exchange_n(aTarget, aValue, __ATOMIC_SEQ_CST);
+#endif
 }
 
+/**
+ * @brief Adds @p aValue and returns the value held *before* the addition.
+ */
 template<typename T>
 inline T AtomicFetchAdd(volatile T* aTarget, T aValue)
 {
+#if RED4EXT_PLATFORM_WINDOWS
+    if constexpr (sizeof(T) == 1)
+        return static_cast<T>(
+            _InterlockedExchangeAdd8(reinterpret_cast<volatile char*>(aTarget), static_cast<char>(aValue)));
+    else if constexpr (sizeof(T) == 2)
+        return static_cast<T>(
+            _InterlockedExchangeAdd16(reinterpret_cast<volatile short*>(aTarget), static_cast<short>(aValue)));
+    else if constexpr (sizeof(T) == 4)
+        return static_cast<T>(
+            _InterlockedExchangeAdd(reinterpret_cast<volatile long*>(aTarget), static_cast<long>(aValue)));
+    else
+        return static_cast<T>(
+            _InterlockedExchangeAdd64(reinterpret_cast<volatile __int64*>(aTarget), static_cast<__int64>(aValue)));
+#else
     return __atomic_fetch_add(aTarget, aValue, __ATOMIC_SEQ_CST);
+#endif
 }
 
+/**
+ * @brief Adds @p aValue and returns the resulting value.
+ */
 template<typename T>
 inline T AtomicAddFetch(volatile T* aTarget, T aValue)
 {
+#if RED4EXT_PLATFORM_WINDOWS
+    return static_cast<T>(AtomicFetchAdd(aTarget, aValue) + aValue);
+#else
     return __atomic_add_fetch(aTarget, aValue, __ATOMIC_SEQ_CST);
+#endif
 }
 
 /**
@@ -132,10 +173,29 @@ inline T AtomicAddFetch(volatile T* aTarget, T aValue)
 template<typename T>
 inline T AtomicCompareExchange(volatile T* aTarget, T aExchange, T aComparand)
 {
+#if RED4EXT_PLATFORM_WINDOWS
+    if constexpr (sizeof(T) == 1)
+        return static_cast<T>(_InterlockedCompareExchange8(reinterpret_cast<volatile char*>(aTarget),
+                                                           static_cast<char>(aExchange),
+                                                           static_cast<char>(aComparand)));
+    else if constexpr (sizeof(T) == 2)
+        return static_cast<T>(_InterlockedCompareExchange16(reinterpret_cast<volatile short*>(aTarget),
+                                                            static_cast<short>(aExchange),
+                                                            static_cast<short>(aComparand)));
+    else if constexpr (sizeof(T) == 4)
+        return static_cast<T>(_InterlockedCompareExchange(reinterpret_cast<volatile long*>(aTarget),
+                                                          static_cast<long>(aExchange),
+                                                          static_cast<long>(aComparand)));
+    else
+        return static_cast<T>(_InterlockedCompareExchange64(reinterpret_cast<volatile __int64*>(aTarget),
+                                                            static_cast<__int64>(aExchange),
+                                                            static_cast<__int64>(aComparand)));
+#else
     T expected = aComparand;
     __atomic_compare_exchange_n(aTarget, &expected, aExchange, false, __ATOMIC_SEQ_CST,
                                 __ATOMIC_SEQ_CST);
     return expected;
+#endif
 }
 
 /**

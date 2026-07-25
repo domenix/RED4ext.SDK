@@ -44,8 +44,8 @@ RED4EXT_INLINE bool RED4ext::SharedSpinLock::TryLockShared()
     char currentState = state;
     if (currentState != -1)
     {
-        return RED4ext::Detail::Platform::AtomicCompareExchange(&state, static_cast<char>(currentState + 1), currentState) ==
-               currentState;
+        return RED4ext::Detail::Platform::AtomicCompareExchange(&state, static_cast<char>(currentState + 1),
+                                                                currentState) == currentState;
     }
     return false;
 }

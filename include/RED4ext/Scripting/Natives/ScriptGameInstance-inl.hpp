@@ -16,24 +16,23 @@ RED4EXT_INLINE RED4ext::ScriptGameInstance::ScriptGameInstance(GameInstance* aIn
     , unk10(0)
 {
     static std::once_flag flag;
-    std::call_once(
-        flag,
-        []()
-        {
-            auto rtti = CRTTISystem::Get();
-            auto gameInstanceType = rtti->GetClass("ScriptGameInstance");
+    std::call_once(flag,
+                   []()
+                   {
+                       auto rtti = CRTTISystem::Get();
+                       auto gameInstanceType = rtti->GetClass("ScriptGameInstance");
 
-            constexpr auto compiledSize = sizeof(ScriptGameInstance);
-            auto nativeSize = gameInstanceType->GetSize();
+                       constexpr auto compiledSize = sizeof(ScriptGameInstance);
+                       auto nativeSize = gameInstanceType->GetSize();
 
-            if (compiledSize != nativeSize)
-            {
-                Detail::Platform::FatalError(
-                    L"RED4ext.SDK",
-                    L"The compiled size do not match the native size of ScriptGameInstance.\nCheck the game "
-                    L"executable for the native size.");
-            }
-        });
+                       if (compiledSize != nativeSize)
+                       {
+                           Detail::Platform::FatalError(
+                               L"RED4ext.SDK",
+                               L"The compiled size do not match the native size of ScriptGameInstance.\nCheck the game "
+                               L"executable for the native size.");
+                       }
+                   });
 
     if (!aInstance)
     {

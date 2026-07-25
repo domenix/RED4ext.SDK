@@ -66,7 +66,7 @@ struct CRITICAL_SECTION
     HANDLE OwningThread;         // 10
     HANDLE LockSemaphore;        // 18
     std::uintptr_t SpinCount;    // 20
-};                               // 28
+}; // 28
 
 #endif
 
@@ -175,25 +175,21 @@ inline T AtomicCompareExchange(volatile T* aTarget, T aExchange, T aComparand)
 {
 #if RED4EXT_PLATFORM_WINDOWS
     if constexpr (sizeof(T) == 1)
-        return static_cast<T>(_InterlockedCompareExchange8(reinterpret_cast<volatile char*>(aTarget),
-                                                           static_cast<char>(aExchange),
-                                                           static_cast<char>(aComparand)));
+        return static_cast<T>(_InterlockedCompareExchange8(
+            reinterpret_cast<volatile char*>(aTarget), static_cast<char>(aExchange), static_cast<char>(aComparand)));
     else if constexpr (sizeof(T) == 2)
-        return static_cast<T>(_InterlockedCompareExchange16(reinterpret_cast<volatile short*>(aTarget),
-                                                            static_cast<short>(aExchange),
-                                                            static_cast<short>(aComparand)));
+        return static_cast<T>(_InterlockedCompareExchange16(
+            reinterpret_cast<volatile short*>(aTarget), static_cast<short>(aExchange), static_cast<short>(aComparand)));
     else if constexpr (sizeof(T) == 4)
         return static_cast<T>(_InterlockedCompareExchange(reinterpret_cast<volatile long*>(aTarget),
-                                                          static_cast<long>(aExchange),
-                                                          static_cast<long>(aComparand)));
+                                                          static_cast<long>(aExchange), static_cast<long>(aComparand)));
     else
         return static_cast<T>(_InterlockedCompareExchange64(reinterpret_cast<volatile __int64*>(aTarget),
                                                             static_cast<__int64>(aExchange),
                                                             static_cast<__int64>(aComparand)));
 #else
     T expected = aComparand;
-    __atomic_compare_exchange_n(aTarget, &expected, aExchange, false, __ATOMIC_SEQ_CST,
-                                __ATOMIC_SEQ_CST);
+    __atomic_compare_exchange_n(aTarget, &expected, aExchange, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
     return expected;
 #endif
 }
@@ -222,7 +218,8 @@ inline std::uintptr_t GetMainImageBase()
 #if RED4EXT_PLATFORM_WINDOWS
     return reinterpret_cast<std::uintptr_t>(GetModuleHandle(nullptr));
 #else
-    static const std::uintptr_t base = []() -> std::uintptr_t {
+    static const std::uintptr_t base = []() -> std::uintptr_t
+    {
         const std::uint32_t count = _dyld_image_count();
         for (std::uint32_t i = 0; i < count; ++i)
         {
@@ -281,8 +278,7 @@ inline HMODULE GetModuleContaining(const void* aAddress)
 {
 #if RED4EXT_PLATFORM_WINDOWS
     HMODULE result = nullptr;
-    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-                                GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
                             reinterpret_cast<LPCWSTR>(aAddress), &result))
     {
         return nullptr;

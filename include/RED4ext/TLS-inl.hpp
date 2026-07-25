@@ -6,7 +6,6 @@
 #include <RED4ext/TLS.hpp>
 #endif
 
-
 RED4EXT_INLINE RED4ext::TLS* RED4ext::TLS::Get()
 {
 #if RED4EXT_PLATFORM_WINDOWS

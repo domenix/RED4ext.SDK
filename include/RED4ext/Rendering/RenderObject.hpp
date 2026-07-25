@@ -45,6 +45,19 @@ protected:
 
 private:
     uint32_t m_refCount{1};
+
+    // Explicit trailing padding, deliberately named rather than left implicit.
+    //
+    // Without it the four bytes after m_refCount are tail padding, and the Itanium ABI
+    // reuses a base class's tail padding for the first member of a derived class while
+    // MSVC does not. That silently places CRenderMesh::quantizationScale at offset 0x0C
+    // instead of 0x10 on non-MSVC compilers -- and the size assertions cannot catch it,
+    // because the explicit unkXX[] arrays further down re-anchor the later members and
+    // keep sizeof() correct.
+    //
+    // Naming the padding makes the layout identical on both ABIs. sizeof(IRenderObject)
+    // is unchanged at 0x10, so this is inert on Windows.
+    uint32_t unk0C{0};
 };
 RED4EXT_ASSERT_SIZE(IRenderObject, 0x10);
 

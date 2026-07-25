@@ -23,9 +23,19 @@
 #endif
 
 #ifndef RED4EXT_ASSERT_OFFSET
-// TODO: find a better way to handle this (clang does not allow offsetof in static_assert)
-#ifdef __clang__
-#define RED4EXT_ASSERT_OFFSET(cls, mbr, offset)
+// offsetof is well-formed inside a static_assert on clang with C++20, so the assertion no
+// longer needs to be compiled out there. It is worth keeping enabled: member offsets are
+// the only thing that catches a base class's tail padding being reused by a derived class,
+// which the Itanium ABI does and MSVC does not. The size assertions cannot see that,
+// because the explicit unkXX[] padding arrays re-anchor later members.
+//
+// Both compilers warn about offsetof on non-standard-layout types; the SDK applies it to
+// polymorphic types on purpose, so the warning is suppressed locally rather than globally.
+#if defined(__clang__)
+#define RED4EXT_ASSERT_OFFSET(cls, mbr, offset)                                                                        \
+    _Pragma("clang diagnostic push") _Pragma("clang diagnostic ignored \"-Winvalid-offsetof\"") static_assert(         \
+        offsetof(cls, mbr) == offset, #cls "::" #mbr " is not on the expected offset (" #offset ")");                  \
+    _Pragma("clang diagnostic pop")
 #else
 #define RED4EXT_ASSERT_OFFSET(cls, mbr, offset)                                                                        \
     static_assert(offsetof(cls, mbr) == offset, #cls "::" #mbr " is not on the expected offset (" #offset ")")
